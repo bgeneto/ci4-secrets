@@ -1,0 +1,69 @@
+{
+    "name": "bgeneto/secure-storage",
+    "description": "A CodeIgniter 4 package for securely storing, encrypting, and decrypting sensitive data.",
+    "keywords": [
+            "codeigniter",
+            "codeigniter4",
+            "secrets",
+            "storage",
+            "sensitive",
+            "encrypt",
+            "dencrypt"
+        ],
+    "type": "library",
+    "homepage": "https://github.com/bgeneto/ci4-secure-storage",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Bernhard Enders",
+            "email": "bgeneto@duck.com",
+            "homepage": "https://github.com/bgeneto",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": ">=8.0",
+        "codeigniter4/framework": "^4.3"
+    },
+    "autoload": {
+        "psr-4": {
+            "Bgeneto\\Secrets\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Bgeneto\\Secrets\\Tests\\": "tests/"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "scripts": {
+        "analyze": [
+            "phpstan analyze",
+            "psalm",
+            "rector process --dry-run"
+        ],
+        "sa": "@analyze",
+        "ci": [
+            "Composer\\Config::disableProcessTimeout",
+            "@cs",
+            "@deduplicate",
+            "@analyze",
+            "@inspect",
+            "@test"
+        ],
+        "cs": [
+            "php-cs-fixer fix src --ansi --verbose --dry-run --diff",
+            "php-cs-fixer fix tests --ansi --verbose --dry-run --diff"
+        ],
+        "cs-fix": [
+            "php-cs-fixer fix src --ansi --verbose --diff --using-cache=yes",
+            "php-cs-fixer fix tests --ansi --verbose --diff --using-cache=yes"
+        ],
+        "style": "@cs-fix",
+        "deduplicate": "php phpcpd.phar src/",
+        "inspect": "deptrac analyze --cache-file=build/deptrac.cache",
+        "mutate": "infection --threads=2 --skip-initial-tests --coverage=build/phpunit",
+        "test": "phpunit"
+    }
+}

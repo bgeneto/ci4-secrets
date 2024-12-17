@@ -1,0 +1,17 @@
+vendor/
+build/
+*.log
+*.swp
+*.swo
+*.swn
+*.bak
+*.tmp
+*.DS_Store
+Thumbs.db
+phpunit*.xml
+phpunit
+*.cache
+composer.lock
+.DS_Store
+.idea/
+.vscode/

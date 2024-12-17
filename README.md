@@ -1,6 +1,6 @@
 # Secrets for CodeIgniter 4
 
-A CodeIgniter 4 package for securely storing sensitive data. The data is stored encrypted using the default database connection.
+This CodeIgniter 4 package offers a secure way to store sensitive information. It encrypts data using your application's default database connection, allowing you to avoid storing secrets such as API keys, certificate passwords, and other sensitive data in plain text within a `.env` file.
 
 ## Installation
 

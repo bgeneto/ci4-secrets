@@ -1,5 +1,5 @@
 {
-    "name": "bgeneto/ci4-secrets",
+    "name": "bgeneto/secrets",
     "description": "A CodeIgniter 4 package for securely storing sensitive data.",
     "keywords": [
             "codeigniter",
@@ -8,7 +8,8 @@
             "storage",
             "sensitive",
             "encrypt",
-            "dencrypt"
+            "decrypt",
+            "database"
         ],
     "type": "library",
     "homepage": "https://github.com/bgeneto/ci4-secrets",

@@ -9,7 +9,18 @@ You can install this package via Composer:
 ```sh
 composer require bgeneto/ci4-secrets
 ```
+Just setup the repository like this in your `composer.json` file:
 
+```json
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "repositories": {
+        "secrets": {
+            "type": "vcs",
+            "url": "https://github.com/bgeneto/ci4-secrets.git"
+        }
+    },
+```
 ## Usage
 
 ### Secrets Library

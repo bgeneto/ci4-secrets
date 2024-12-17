@@ -1,6 +1,6 @@
 {
-    "name": "bgeneto/secure-storage",
-    "description": "A CodeIgniter 4 package for securely storing, encrypting, and decrypting sensitive data.",
+    "name": "bgeneto/ci4-secrets",
+    "description": "A CodeIgniter 4 package for securely storing sensitive data.",
     "keywords": [
             "codeigniter",
             "codeigniter4",
@@ -11,7 +11,7 @@
             "dencrypt"
         ],
     "type": "library",
-    "homepage": "https://github.com/bgeneto/ci4-secure-storage",
+    "homepage": "https://github.com/bgeneto/ci4-secrets",
     "license": "MIT",
     "authors": [
         {

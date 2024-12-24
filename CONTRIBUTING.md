@@ -7,8 +7,8 @@ Thank you for considering contributing to the Secure Storage package for CodeIgn
 1. **Fork the Repository**: Click the "Fork" button on the top right of the repository page to create a copy of the repository in your GitHub account.
 2. **Clone Your Fork**: Clone the forked repository to your local machine.
    ```sh
-   git clone https://github.com/your-username/secure-storage.git
-   cd secure-storage
+   git clone https://github.com/bgeneto/ci4-secrets.git
+   cd secrets
    ```
 3. **Install Dependencies**: Use Composer to install the project dependencies.
    ```sh

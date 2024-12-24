@@ -69,6 +69,9 @@ class SecretsCommand extends BaseCommand
 			case 'add':
 				$this->addSecret();
 				break;
+			case 'get':
+				$this->getSecret();
+				break;
 			case 'update':
 				$this->updateSecret();
 				break;
@@ -112,19 +115,19 @@ class SecretsCommand extends BaseCommand
 	private function addSecret(): void
 	{
 		$key = $this->getKey();
-		if (empty($key) || $key === '1') {
+		if (empty($key)) {
 			CLI::error('Key is required');
 			return;
 		}
 
 		$value = $this->getValue();
-		if (empty($value) || $value === '1') {
+		if (empty($value)) {
 			CLI::error('Value is required');
 			return;
 		}
 
 		try {
-			$result = $this->secrets->store($key, $value, false);
+			$result = $this->secrets->store($key, $value);
 			if ($result) {
 				CLI::write("Secret '{$key}' stored successfully!", 'green');
 			} else {
@@ -133,7 +136,7 @@ class SecretsCommand extends BaseCommand
 		} catch (\Throwable $th) {
 			if (CLI::getOption('force')) {
 				try {
-					$result = $this->secrets->update($key, $value, false);
+					$result = $this->secrets->update($key, $value);
 					if ($result) {
 						CLI::write("Secret '{$key}' updated successfully!", 'green');
 					} else {
@@ -150,6 +153,27 @@ class SecretsCommand extends BaseCommand
 	}
 
 	/**
+	 * Retrieves a secret
+	 */
+	private function getSecret(): void
+	{
+		$key = $this->getKey();
+		if (empty($key)) return;
+
+		try {
+			$value = $this->secrets->retrieve($key);
+			if ($value !== null) {
+				CLI::write("Current value for '{$key}' is:", 'green');
+				CLI::write($value);
+			} else {
+				CLI::error("Secret not found");
+			}
+		} catch (\Exception $e) {
+			CLI::error($e->getMessage());
+		}
+	}
+
+	/**
 	 * Updates an existing secret
 	 */
 	private function updateSecret(): void
@@ -161,7 +185,7 @@ class SecretsCommand extends BaseCommand
 		if (empty($value)) return;
 
 		try {
-			$result = $this->secrets->update($key, $value, false);
+			$result = $this->secrets->update($key, $value);
 			if ($result) {
 				CLI::write("Secret '{$key}' updated successfully!", 'green');
 			} else {
@@ -186,7 +210,7 @@ class SecretsCommand extends BaseCommand
 		}
 
 		try {
-			$result = $this->secrets->delete($key, false);
+			$result = $this->secrets->delete($key);
 			if ($result) {
 				CLI::write("Secret '{$key}' deleted successfully!", 'green');
 			} else {
@@ -231,6 +255,7 @@ class SecretsCommand extends BaseCommand
 	private function getKey(): ?string
 	{
 		$key = CLI::getOption('key');
+
 		if (empty($key)) {
 			$key = CLI::prompt('Enter key name');
 		}
@@ -250,7 +275,7 @@ class SecretsCommand extends BaseCommand
 	{
 		$value = CLI::getOption('value');
 		if (empty($value)) {
-			$value = CLI::prompt('Enter value', null, true); // true for hidden input
+			$value = CLI::prompt('Enter value'); // true for hidden input
 		}
 
 		if (empty($value)) {

@@ -97,7 +97,7 @@ class Secrets
 
 			// Check if key already exists
 			if ($builder->where('key_name', $key)->countAllResults() > 0) {
-				throw new DatabaseException('Key already exists. Use update() instead.');
+				throw new DatabaseException('Key already exists. Use update() or --force instead.');
 			}
 
 			$result = $builder->insert($data);
@@ -259,7 +259,7 @@ class Secrets
 					'created_at' => date('Y-m-d H:i:s')
 				];
 
-				$this->db->table('access_logs')->insert($data);
+				$this->db->table('secrets_logs')->insert($data);
 			} catch (\Exception $e) {
 				$this->logger->error('Error logging access: ' . $e->getMessage());
 			}

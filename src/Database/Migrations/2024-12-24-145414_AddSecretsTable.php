@@ -23,9 +23,17 @@ class AddSecretsTable extends Migration
             'encrypted_value' => [
                 'type' => 'TEXT',
             ],
+            'created_at' => [
+                'type' => 'DATETIME',
+                'null' => true,
+                'default' => null,
+            ],
+            'updated_at' => [
+                'type' => 'DATETIME',
+                'null' => true,
+                'default' => null,
+            ],
         ]);
-        $this->forge->addField('created_at DATETIME NOT NULL DEFAULT current_timestamp()');
-        $this->forge->addField('updated_at DATETIME NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()');
         $this->forge->addPrimaryKey('id');
         $this->forge->createTable('secrets');
     }

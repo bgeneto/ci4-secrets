@@ -32,8 +32,12 @@ class AddSecretsLogsTable extends Migration
                 'type' => 'VARCHAR',
                 'constraint' => 45,
             ],
+            'created_at' => [
+                'type' => 'DATETIME',
+                'null' => true,
+                'default' => null,
+            ],
         ]);
-        $this->forge->addField('created_at DATETIME NOT NULL DEFAULT current_timestamp()');
         $this->forge->addPrimaryKey('id');
         $this->forge->createTable('secrets_logs');
     }

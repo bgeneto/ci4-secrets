@@ -13,10 +13,13 @@ class Secrets
 {
 	private BaseConnection $db;
 	private EncrypterInterface $encrypter;
-	private $logger;
 	private $cache;
-	private string $cachePrefix = 'secure_storage_';
-	private int $cacheTTL = 7200;
+	private $logger;
+	private $config;
+	private $useCache;
+	private $useLog;
+	private $cacheTTL;
+	private string $cachePrefix;
 
 	public function __construct()
 	{
@@ -24,6 +27,11 @@ class Secrets
 		$this->encrypter = service('encrypter');
 		$this->logger = Services::logger();
 		$this->cache = Services::cache();
+		$this->config = config(\Config\Secrets::class);
+		$this->useCache = $this->config->useCache;
+		$this->useLog = $this->config->useLog;
+		$this->cachePrefix = $this->config->cachePrefix;
+		$this->cacheTTL = $this->config->cacheTTL;
 
 		// Verify encryption is properly configured
 		if (!$this->encrypter->key) {
@@ -70,11 +78,10 @@ class Secrets
 	 *
 	 * @param string $key
 	 * @param string $value
-	 * @param bool $log
 	 * @return bool
 	 * @throws DatabaseException|EncryptionException
 	 */
-	public function store(string $key, string $value, bool $log = true): bool
+	public function store(string $key, string $value): bool
 	{
 		try {
 			$encrypted = $this->encrypt($value);
@@ -97,9 +104,11 @@ class Secrets
 
 			if ($result) {
 				// Store in cache
-				$this->cache->save($this->cachePrefix . $key, $encrypted, $this->cacheTTL);
+				if ($this->useCache) {
+					$this->cache->save($this->cachePrefix . $key, $encrypted, $this->cacheTTL);
+				}
 
-				if ($log) {
+				if ($this->useLog) {
 					$this->logAccess('store', $key);
 				}
 			}
@@ -118,11 +127,10 @@ class Secrets
 	 *
 	 * @param string $key
 	 * @param string $value
-	 * @param bool $log
 	 * @return bool
 	 * @throws DatabaseException|EncryptionException
 	 */
-	public function update(string $key, string $value, bool $log = true): bool
+	public function update(string $key, string $value): bool
 	{
 		try {
 			$encrypted = $this->encrypt($value);
@@ -138,9 +146,11 @@ class Secrets
 
 			if ($result) {
 				// Update cache
-				$this->cache->save($this->cachePrefix . $key, $encrypted, $this->cacheTTL);
+				if ($this->useCache) {
+					$this->cache->save($this->cachePrefix . $key, $encrypted, $this->cacheTTL);
+				}
 
-				if ($log) {
+				if ($this->useLog) {
 					$this->logAccess('update', $key);
 				}
 			}
@@ -158,11 +168,10 @@ class Secrets
 	 * Retrieves and decrypts stored value
 	 *
 	 * @param string $key
-	 * @param bool $log
 	 * @return string|null
 	 * @throws EncryptionException
 	 */
-	public function retrieve(string $key, bool $log = true): ?string
+	public function retrieve(string $key): ?string
 	{
 		try {
 			// Try to get from cache first
@@ -182,10 +191,12 @@ class Secrets
 
 				$encrypted = $result['encrypted_value'];
 				// Store in cache for future requests
-				$this->cache->save($this->cachePrefix . $key, $encrypted, $this->cacheTTL);
+				if ($this->useCache) {
+					$this->cache->save($this->cachePrefix . $key, $encrypted, $this->cacheTTL);
+				}
 			}
 
-			if ($log) {
+			if ($this->useLog) {
 				$this->logAccess('retrieve', $key);
 			}
 
@@ -202,10 +213,9 @@ class Secrets
 	 * Deletes stored encrypted value
 	 *
 	 * @param string $key
-	 * @param bool $log
 	 * @return bool
 	 */
-	public function delete(string $key, bool $log = true): bool
+	public function delete(string $key): bool
 	{
 		try {
 			$result = $this->db->table('secrets')
@@ -214,9 +224,11 @@ class Secrets
 
 			if ($result) {
 				// Delete from cache
-				$this->cache->delete($this->cachePrefix . $key);
+				if ($this->useCache) {
+					$this->cache->delete($this->cachePrefix . $key);
+				}
 
-				if ($log) {
+				if ($this->useLog) {
 					$this->logAccess('delete', $key);
 				}
 			}
@@ -237,18 +249,20 @@ class Secrets
 	 */
 	private function logAccess(string $action, string $key): void
 	{
-		try {
-			$data = [
-				'action' => $action,
-				'key_name' => $key,
-				'user_id' => user_id() ?? 0,
-				'ip_address' => Services::request()->getIPAddress(),
-				'created_at' => date('Y-m-d H:i:s')
-			];
+		if ($this->useLog) {
+			try {
+				$data = [
+					'action' => $action,
+					'key_name' => $key,
+					'user_id' => function_exists('user_id') ? user_id() : 0,
+					'ip_address' => Services::request()->getIPAddress(),
+					'created_at' => date('Y-m-d H:i:s')
+				];
 
-			$this->db->table('access_logs')->insert($data);
-		} catch (\Exception $e) {
-			$this->logger->error('Error logging access: ' . $e->getMessage());
+				$this->db->table('access_logs')->insert($data);
+			} catch (\Exception $e) {
+				$this->logger->error('Error logging access: ' . $e->getMessage());
+			}
 		}
 	}
 }

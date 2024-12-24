@@ -4,14 +4,14 @@ This CodeIgniter 4 package offers a secure way to store sensitive information. I
 
 ## Installation
 
-You can install this package via Composer:
-
-```sh
-composer require bgeneto/ci4-secrets
-```
 Just setup the repository like this in your `composer.json` file:
 
 ```json
+    "require": {
+        "php": "^8.1",
+        "codeigniter4/framework": "^4.0",
+        "bgeneto/secrets": "dev-main"
+    },
     "minimum-stability": "dev",
     "prefer-stable": true,
     "repositories": {
@@ -21,6 +21,13 @@ Just setup the repository like this in your `composer.json` file:
         }
     },
 ```
+
+Now you can install this package via Composer:
+
+```sh
+composer update
+```
+
 ## Usage
 
 ### Secrets Library

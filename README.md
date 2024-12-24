@@ -50,7 +50,7 @@ php spark secrets:publish
 
 ### 5. Create required database tables
 
-This packages uses two tables: `secrets` and `secrets_log`. In order to create those tables you have to issue the command:
+This packages uses two tables: `secrets` and `secrets_log`. In order to create those tables you have to issue the command (ensure you have a properly configured database connection):
 
 ```sh
 php spark migrate -all

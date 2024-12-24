@@ -16,13 +16,13 @@ class Publish extends BaseCommand
      *
      * @var string
      */
-    protected $group       = 'Secrets';
+    protected $group = 'Secrets';
     /**
      * The Command's name
      *
      * @var string
      */
-    protected $name        = 'publish';
+    protected $name = 'secrets:publish';
     /**
      * the Command's short description
      *

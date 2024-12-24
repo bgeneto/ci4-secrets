@@ -4,6 +4,8 @@ This CodeIgniter 4 package offers a secure way to store sensitive information. I
 
 ## Installation
 
+### 1. Edit your composer json file 
+
 Just setup the repository like this in your `composer.json` file:
 
 ```json
@@ -22,11 +24,37 @@ Just setup the repository like this in your `composer.json` file:
     },
 ```
 
-Now you can install this package via Composer:
+### 2. Install this package via composer:
 
 ```sh
 composer update
 ```
+
+### 3. Create a CI4 encription key (only if your app does not have one yet)
+
+```sh
+php spark key:generate
+```
+
+This will put a encryption key in your `.env` similar to this:
+
+```
+encryption.key = hex2bin:2869d5b78952d4268d1cf5fb37d24e6850875fd86f246f959a7c315718d039a2
+```
+
+### 4. Publish the package config file 
+
+```sh
+php spark secrets:publish
+```
+
+### 5. Create required database tables
+
+This packages uses two tables: `secrets` and `secrets_log`. In order to create those tables you have to issue the command:
+
+```sh
+php spark migrate -all
+``` 
 
 ## Usage
 

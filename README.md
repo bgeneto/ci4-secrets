@@ -1,6 +1,8 @@
-# Secrets for CodeIgniter 4
+# CI4 Secrets
 
-This CodeIgniter 4 package offers a secure way to store sensitive information. It encrypts data using your application's default database connection, allowing you to avoid storing secrets such as API keys, certificate passwords, and other sensitive data in plain text within a `.env` file.
+CI4 Secrets is a CodeIgniter 4 package designed to provide a secure and reliable way to store sensitive data, such as API keys, certificate passwords, and other confidential information. By utilizing CI4's encryption key, CI4 Secrets encrypts data at rest and stores it securely using your default database connection. 
+
+With CI4 Secrets, you can eliminate the risk of storing sensitive information in plain text within your `.env` file, reducing the exposure of your application to potential security breaches. Instead, store your secrets securely and access them easily through the package's intuitive interface.
 
 ## Installation
 
@@ -54,7 +56,7 @@ This packages uses two tables: `secrets` and `secrets_log`. In order to create t
 
 ```sh
 php spark migrate -all
-``` 
+```
 
 ## Usage
 

@@ -10,27 +10,27 @@ class AddSecretsTable extends Migration
     {
         $this->forge->addField([
             'id' => [
-                'type' => 'INT',
-                'constraint' => 11,
-                'unsigned' => true,
+                'type'           => 'INT',
+                'constraint'     => 11,
+                'unsigned'       => true,
                 'auto_increment' => true,
             ],
             'key_name' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 254,
-                'unique' => true,
+                'unique'     => true,
             ],
             'encrypted_value' => [
                 'type' => 'TEXT',
             ],
             'created_at' => [
-                'type' => 'DATETIME',
-                'null' => true,
+                'type'    => 'DATETIME',
+                'null'    => true,
                 'default' => null,
             ],
             'updated_at' => [
-                'type' => 'DATETIME',
-                'null' => true,
+                'type'    => 'DATETIME',
+                'null'    => true,
                 'default' => null,
             ],
         ]);

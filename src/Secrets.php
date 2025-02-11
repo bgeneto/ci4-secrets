@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Bgeneto\Secrets;
 
+use CodeIgniter\Cache\CacheInterface;
 use CodeIgniter\Database\BaseConnection;
 use CodeIgniter\Database\Exceptions\DatabaseException;
 use CodeIgniter\Encryption\EncrypterInterface;
@@ -9,28 +12,35 @@ use CodeIgniter\Encryption\Exceptions\EncryptionException;
 use Config\Database;
 use Config\Services;
 use Exception;
+use Psr\Log\LoggerInterface;
 
 class Secrets
 {
+    // NOTE: Intelephense may incorrectly report undefined properties
+    // for $useCache, $cachePrefix, and $cacheTTL, even though they are
+    // correctly defined and typed. This is likely due to how CodeIgniter
+    // handles configuration. The code is functionally correct.
     private BaseConnection $db;
     private EncrypterInterface $encrypter;
-    private $cache;
-    private $logger;
+    private CacheInterface $cache;
+    private LoggerInterface $logger;
     private $config;
-    private $useCache;
-    private $cacheTTL;
+    private bool $useCache;
+    private int $cacheTTL;
     private string $cachePrefix;
 
     public function __construct()
     {
-        $this->db          = Database::connect();
-        $this->encrypter   = \service('encrypter');
-        $this->logger      = Services::logger();
-        $this->cache       = Services::cache();
-        $this->config      = \config(\Config\Secrets::class);
-        $this->useCache    = $this->config->useCache;
-        $this->cachePrefix = $this->config->cachePrefix;
-        $this->cacheTTL    = $this->config->cacheTTL;
+        $this->db        = Database::connect();
+        $this->encrypter = Services::encrypter();
+        $this->logger    = Services::logger();
+        $this->cache     = Services::cache();
+        $this->config    = \config('secrets');
+
+        // Load config values with type checks
+        $this->useCache    = (bool) $this->config->useCache;
+        $this->cachePrefix = (string) $this->config->cachePrefix;
+        $this->cacheTTL    = (int) $this->config->cacheTTL;
 
         // Verify encryption is properly configured
         if (! $this->encrypter->key) {
@@ -66,7 +76,7 @@ class Secrets
         } catch (Exception $e) {
             $this->logger->error('Decryption failed: ' . $e->getMessage());
 
-            throw new EncryptionException('Failed to decrypt data: ' . $e->getMessage());
+            throw new EncryptionException('Failed to decrypt  ' . $e->getMessage());
         }
     }
 

@@ -4,35 +4,62 @@ CI4 Secrets is a CodeIgniter 4 package designed to provide a secure and reliable
 
 With CI4 Secrets, you can eliminate the risk of storing sensitive information in plain text within your `.env` file, reducing the exposure of your application to potential security breaches. Instead, store your secrets securely and access them easily through the package's intuitive interface.
 
-## Installation
+## 1. Installation
+---
 
-### 1. Edit your composer json file 
+### 1.1 Composer + Packagist
 
-Just setup the repository like this in your `composer.json` file:
+```bash
+composer require bgeneto/ci4-secrets
+```
+
+### 1.2 Composer + GitHub:
+
+Just setup the repository like this in your project's `composer.json` file:
 
 ```json
+{
     "require": {
-        "php": "^8.1",
-        "codeigniter4/framework": "^4.0",
-        "bgeneto/secrets": "dev-main"
+        "your-project/other-dependencies": "...",
+        "bgeneto/ci4-secrets": "dev-main"
     },
-    "minimum-stability": "dev",
-    "prefer-stable": true,
+
     "repositories": {
-        "secrets": {
+        "sanitize": {
             "type": "vcs",
             "url": "https://github.com/bgeneto/ci4-secrets.git"
         }
+    }
+}
+```
+
+### 1.3 Composer + Local:
+
+```bash
+git clone https://github.com/bgeneto/ci4-secrets.git /path/to/your/local/ci4-secrets	
+```
+
+Now edit your `composer.json` file and add a new repository:
+
+```json
+{
+    "require": {
+        "your-project/other-dependencies": "...",
+        "bgeneto/ci4-secrets": "dev-main"
     },
+    
+    "repositories": {
+        "sanitize": {
+            "type": "path",
+            "url": "/path/to/your/local/ci4-secrets"
+        }
+    }
+}
 ```
 
-### 2. Install this package via composer:
+### 2. Check if you have an encryption key
 
-```sh
-composer update
-```
-
-### 3. Create a CI4 encription key (only if your app does not have one yet)
+Check in your `.env` or in `Config\Encryption` if you have an encryption key already configured, if not just run this spark command below: 
 
 ```sh
 php spark key:generate
@@ -41,41 +68,32 @@ php spark key:generate
 This will put a encryption key in your `.env` similar to this:
 
 ```
-encryption.key = hex2bin:2869d5b78952d4268d1cf5fb37d24e6850875fd86f246f959a7c315718d039a2
+encryption.key = hex2bin:2869d5b48952d4268d1cf5fb37d24e6850875fd86f246f959a7c315718d039a2
 ```
 
-### 4. Publish the package config file 
+### 3. Publish the package config file 
 
 ```sh
 php spark secrets:publish
 ```
+This will create a new `Config\Secrets.php` file that you can customize.
 
-### 5. Create required database tables
+### 5. Create the required table
 
-This packages uses two tables: `secrets` and `secrets_log`. In order to create those tables you have to issue the command (ensure you have a properly configured database connection):
+This packages uses only one database table called `secrets` . You have to run the spark migration command to create it. 
 
-```sh
-php spark migrate -all
+```bash
+php spark migrate --all
 ```
 
-## Usage
 
-### Secrets Library
 
-The `Secrets` library provides methods to securely store, encrypt, and decrypt sensitive data using CodeIgniter 4's encryption service.
+## 2. Usage
+---
 
-#### Methods
+### 2.1 CLI Usage
 
-- `encrypt(string $data): string`
-- `decrypt(string $encryptedData): string`
-- `store(string $key, string $value, bool $log = true): bool`
-- `update(string $key, string $value, bool $log = true): bool`
-- `retrieve(string $key, bool $log = true): ?string`
-- `delete(string $key, bool $log = true): bool`
-
-### Secrets Command
-
-The `secrets` command allows you to manage encrypted secrets in the database.
+The Secrets package provides the following spark new command: `php spark secrets` with the available options:
 
 #### Available Operations
 
@@ -83,18 +101,19 @@ The `secrets` command allows you to manage encrypted secrets in the database.
 - `update`: Update an existing secret.
 - `delete`: Delete a secret.
 - `list`: List all secret keys.
+- `get`: Get a secret value.
 
 #### Usage Examples
 
 ```sh
-# Add a new secret
-php spark secrets add --key=api_key --value=sk_12345678
-
-# Add via interactive mode
+# Add a new secret via interactive mode:
 php spark secrets add
 
+# Add a new secret directly using its name (key) and value:
+php spark secrets add --key=api_key --value=sk_12345678
+
 # Force add if key exists
-php spark secrets add --key=api_key --value=sk_12345678 --force
+php spark secrets add --key=api_key --value=sk_12345678 --force=yes
 
 # Update an existing secret
 php spark secrets update --key=api_key --value=sk-87654321
@@ -111,9 +130,23 @@ php spark secrets delete
 # List all secrets
 php spark secrets list
 
+# Get a secret value
+php spark secrets get
+
 ## Get help
 php spark secrets
 ```
+
+The `Secrets` library provides methods to securely store, encrypt, and decrypt sensitive data using CodeIgniter 4's encryption service anywhere (model, controllers...).
+
+#### Methods
+
+- `encrypt(string $data): string`
+- `decrypt(string $encryptedData): string`
+- `store(string $key, string $value, bool $log = true): bool`
+- `update(string $key, string $value, bool $log = true): bool`
+- `retrieve(string $key, bool $log = true): ?string`
+- `delete(string $key, bool $log = true): bool`
 
 ## License
 

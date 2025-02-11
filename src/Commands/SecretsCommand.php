@@ -14,69 +14,133 @@ use Throwable;
 /**
  * Command line interface for managing application secrets.
  *
- * This class provides functionality to manage secrets through CLI commands:
- * - Add new secrets
+ * This class provides functionality to manage encrypted secrets through CLI commands:
+ * - Add new secrets with optional force update
+ * - Retrieve existing secrets
  * - Update existing secrets
  * - Delete secrets
  * - List all secret keys
  *
- * @category   CLI Command
- * @see       https://github.com/bgeneto/ci4-secrets
+ * Usage:
+ * ```bash
+ * php spark secrets [operation] [--key=keyname] [--value=secretvalue] [--force=yes|no]
+ * ```
  *
- * @method void addSecret()
- * @method void deleteSecret()
- * @method void listSecrets()
- * @method void run(array $params)
- * @method void showHelp()
- * @method void updateSecret()
+ * @category    CLI Command
+ * @license     MIT
+ * @see        https://github.com/bgeneto/ci4-secrets
+ * @version     1.0.1
+ * @since       1.0.0
+ * @modified    2025-02-11
  */
 class SecretsCommand extends BaseCommand
 {
-    protected $group       = 'Secrets';
-    protected $name        = 'secrets';
+    /**
+     * The Command's Group
+     *
+     * @var string
+     */
+    protected $group = 'Secrets';
+
+    /**
+     * The Command's Name
+     *
+     * @var string
+     */
+    protected $name = 'secrets';
+
+    /**
+     * The Command's Description
+     *
+     * @var string
+     */
     protected $description = 'Manages encrypted secrets in the database';
-    protected $usage       = 'secrets [operation] [options]';
-    protected $arguments   = [
+
+    /**
+     * The Command's Usage
+     *
+     * @var string
+     */
+    protected $usage = 'secrets [operation] [--key=keyname] [--value=secretvalue] [--force=yes|no]';
+
+    /**
+     * The Command's Arguments
+     *
+     * @var array<string, string>
+     */
+    protected $arguments = [
         'operation' => 'Operation to perform: add, get, update, delete, list',
     ];
+
+    /**
+     * The Command's Options
+     *
+     * @var array<string, string>
+     */
     protected $options = [
-        '--key'   => 'Key name for the secret',
-        '--value' => 'Value to store (for add/update operations)',
-        '--force' => 'Force update if key exists',
+        '--key'   => 'Key name for the secret (required for add/get/update/delete)',
+        '--value' => 'Value to store (required for add/update operations)',
+        '--force' => 'Force update if key exists (yes/no)',
     ];
+
+    /**
+     * The Secrets service instance
+     */
     private Secrets $secrets;
 
+    /**
+     * Constructor.
+     *
+     * @param LoggerInterface $logger   Instance of the logger
+     * @param Commands        $commands Instance of the commands service
+     */
     public function __construct(LoggerInterface $logger, Commands $commands)
     {
         parent::__construct($logger, $commands);
         $this->secrets = new Secrets();
     }
 
+    /**
+     * Execute the console command.
+     *
+     * This method is the entry point for the command execution and handles
+     * the routing to specific operations based on the provided arguments.
+     *
+     * @param array<int, string> $params Command line parameters
+     *
+     * @return void
+     */
     public function run(array $params)
     {
+        // Check if operation is provided
         if (! isset($params[0])) {
             $this->showHelp();
 
             return;
         }
 
+        // Get operation and options
         $operation = $params[0];
+        $key       = CLI::getOption('key');
+        $value     = CLI::getOption('value');
+        $force     = \strtolower(CLI::getOption('force')) === 'yes';
 
+        // Route to appropriate operation
         switch ($operation) {
             case 'add':
-                $this->addSecret();
+                $this->addSecret($key, $value, $force);
                 break;
 
             case 'get':
-                $this->getSecret();
+                $this->getSecret($key);
                 break;
 
             case 'update':
-                $this->updateSecret();
+                $this->updateSecret($key, $value);
                 break;
 
             case 'delete':
-                $this->deleteSecret();
+                $this->deleteSecret($key);
                 break;
 
             case 'list':
@@ -89,45 +153,70 @@ class SecretsCommand extends BaseCommand
     }
 
     /**
-     * Display command help
+     * Display command help information.
+     *
+     * Shows detailed usage instructions, available operations,
+     * options, and examples for using the secrets command.
      */
-    public function showHelp()
+    public function showHelp(): void
     {
         CLI::write('Available Operations:', 'yellow');
         CLI::write('  add    : Add a new secret');
+        CLI::write('  get    : Retrieve a secret by key');
         CLI::write('  update : Update an existing secret');
         CLI::write('  delete : Delete a secret');
         CLI::write('  list   : List all secret keys');
         CLI::newLine();
         CLI::write('Options:', 'yellow');
-        CLI::write('  --key   : Key name for the secret');
-        CLI::write('  --value : Value to store (for add/update operations)');
-        CLI::write('  --force : Force update if key exists');
+        CLI::write('  --key=keyname     : Key name for the secret');
+        CLI::write('  --value=secret    : Value to store (for add/update operations)');
+        CLI::write('  --force=yes|no    : Force update if key exists');
         CLI::newLine();
         CLI::write('Examples:', 'yellow');
-        CLI::write('  php spark secrets add --key=api_key --value=secret123');
-        CLI::write('  php spark secrets update --key=api_key --value=newSecret123');
+        CLI::write('  php spark secrets add --key=api_key --value=sk-1234');
+        CLI::write('  php spark secrets add --key=api_key --value=sk-1234 --force=yes');
+        CLI::write('  php spark secrets get --key=api_key');
+        CLI::write('  php spark secrets update --key=master_password --value=MyNewPasswd123');
         CLI::write('  php spark secrets delete --key=api_key');
         CLI::write('  php spark secrets list');
     }
 
     /**
-     * Adds a new secret
+     * Add a new secret to the storage.
+     *
+     * If the key already exists and force option is not enabled,
+     * the operation will fail. Interactive mode is supported when
+     * key or value are not provided.
+     *
+     * @param string|null $key   The key name for the secret
+     * @param string|null $value The secret value to store
+     * @param bool        $force Whether to force update if key exists
      */
-    private function addSecret(): void
+    private function addSecret(?string $key, ?string $value, bool $force = false): void
     {
-        $key = $this->getKey();
-        if (empty($key)) {
-            CLI::error('Key is required');
+        // Get key from CLI option if not passed as parameter
+        $key ??= CLI::getOption('key');
 
-            return;
+        // Get value from CLI option if not passed as parameter
+        $value ??= CLI::getOption('value');
+
+        // Only prompt if still empty after checking CLI options
+        if (empty($key)) {
+            $key = CLI::prompt('Enter key name');
+            if (empty($key)) {
+                CLI::error('Key is required');
+
+                return;
+            }
         }
 
-        $value = $this->getValue();
         if (empty($value)) {
-            CLI::error('Value is required');
+            $value = CLI::prompt('Enter value');
+            if (empty($value)) {
+                CLI::error('Value is required');
 
-            return;
+                return;
+            }
         }
 
         try {
@@ -138,7 +227,7 @@ class SecretsCommand extends BaseCommand
                 CLI::error('Failed to store secret');
             }
         } catch (Throwable $th) {
-            if (CLI::getOption('force')) {
+            if ($force) {
                 try {
                     $result = $this->secrets->update($key, $value);
                     if ($result) {
@@ -151,19 +240,28 @@ class SecretsCommand extends BaseCommand
                 }
             } else {
                 CLI::error($th->getMessage());
-                CLI::write('Use --force to update existing key', 'yellow');
+                CLI::write('Use --force=yes to update existing key', 'yellow');
             }
         }
     }
 
     /**
-     * Retrieves a secret
+     * Retrieve a secret by its key.
+     *
+     * @param string|null $key The key name to retrieve
      */
-    private function getSecret(): void
+    private function getSecret(?string $key): void
     {
-        $key = $this->getKey();
+        // Get key from CLI option if not passed as parameter
+        $key ??= CLI::getOption('key');
+
         if (empty($key)) {
-            return;
+            $key = CLI::prompt('Enter key name');
+            if (empty($key)) {
+                CLI::error('Key is required');
+
+                return;
+            }
         }
 
         try {
@@ -180,18 +278,33 @@ class SecretsCommand extends BaseCommand
     }
 
     /**
-     * Updates an existing secret
+     * Update an existing secret.
+     *
+     * @param string|null $key   The key name to update
+     * @param string|null $value The new secret value
      */
-    private function updateSecret(): void
+    private function updateSecret(?string $key, ?string $value): void
     {
-        $key = $this->getKey();
+        // Get key and value from CLI options if not passed as parameters
+        $key ??= CLI::getOption('key');
+        $value ??= CLI::getOption('value');
+
         if (empty($key)) {
-            return;
+            $key = CLI::prompt('Enter key name');
+            if (empty($key)) {
+                CLI::error('Key is required');
+
+                return;
+            }
         }
 
-        $value = $this->getValue();
         if (empty($value)) {
-            return;
+            $value = CLI::prompt('Enter new value');
+            if (empty($value)) {
+                CLI::error('Value is required');
+
+                return;
+            }
         }
 
         try {
@@ -207,13 +320,22 @@ class SecretsCommand extends BaseCommand
     }
 
     /**
-     * Deletes a secret
+     * Delete a secret by its key.
+     *
+     * @param string|null $key The key name to delete
      */
-    private function deleteSecret(): void
+    private function deleteSecret(?string $key): void
     {
-        $key = $this->getKey();
+        // Get key from CLI option if not passed as parameter
+        $key ??= CLI::getOption('key');
+
         if (empty($key)) {
-            return;
+            $key = CLI::prompt('Enter key name');
+            if (empty($key)) {
+                CLI::error('Key is required');
+
+                return;
+            }
         }
 
         if (! CLI::prompt('Are you sure you want to delete this secret?', ['y', 'n']) === 'y') {
@@ -235,7 +357,10 @@ class SecretsCommand extends BaseCommand
     }
 
     /**
-     * Lists all secret keys (not values)
+     * List all available secret keys.
+     *
+     * Displays a table with key names and their creation/update timestamps.
+     * Note: Secret values are not displayed for security reasons.
      */
     private function listSecrets(): void
     {
@@ -261,44 +386,5 @@ class SecretsCommand extends BaseCommand
         } catch (Throwable $th) {
             CLI::error($th->getMessage());
         }
-    }
-
-    /**
-     * Gets key from command line
-     */
-    private function getKey(): ?string
-    {
-        $key = CLI::getOption('key');
-
-        if (empty($key)) {
-            $key = CLI::prompt('Enter key name');
-        }
-
-        if (empty($key)) {
-            CLI::error('Key is required');
-
-            return null;
-        }
-
-        return $key;
-    }
-
-    /**
-     * Gets value from command line
-     */
-    private function getValue(): ?string
-    {
-        $value = CLI::getOption('value');
-        if (empty($value)) {
-            $value = CLI::prompt('Enter value'); // true for hidden input
-        }
-
-        if (empty($value)) {
-            CLI::error('Value is required');
-
-            return null;
-        }
-
-        return $value;
     }
 }

@@ -28,4 +28,11 @@ class Secrets extends BaseConfig
      * @var int
      */
     public $cacheTTL = 21600;  // 6 hours
+
+    /**
+     * The model class to use for managing secrets.
+     *
+     * @var string
+     */
+    public $modelClass = '\Bgeneto\Secrets\Models\BaseSecretModel';
 }

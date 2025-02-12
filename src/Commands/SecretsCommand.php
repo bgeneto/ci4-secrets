@@ -203,7 +203,7 @@ class SecretsCommand extends BaseCommand
         // Only prompt if still empty after checking CLI options
         if (empty($key)) {
             $key = CLI::prompt('Enter key name');
-            if (empty($key)) {
+            if ($key === '' || $key === '0') {
                 CLI::error('Key is required');
 
                 return;
@@ -212,7 +212,7 @@ class SecretsCommand extends BaseCommand
 
         if (empty($value)) {
             $value = CLI::prompt('Enter value');
-            if (empty($value)) {
+            if ($value === '' || $value === '0') {
                 CLI::error('Value is required');
 
                 return;
@@ -257,7 +257,7 @@ class SecretsCommand extends BaseCommand
 
         if (empty($key)) {
             $key = CLI::prompt('Enter key name');
-            if (empty($key)) {
+            if ($key === '' || $key === '0') {
                 CLI::error('Key is required');
 
                 return;
@@ -291,7 +291,7 @@ class SecretsCommand extends BaseCommand
 
         if (empty($key)) {
             $key = CLI::prompt('Enter key name');
-            if (empty($key)) {
+            if ($key === '' || $key === '0') {
                 CLI::error('Key is required');
 
                 return;
@@ -300,7 +300,7 @@ class SecretsCommand extends BaseCommand
 
         if (empty($value)) {
             $value = CLI::prompt('Enter new value');
-            if (empty($value)) {
+            if ($value === '' || $value === '0') {
                 CLI::error('Value is required');
 
                 return;
@@ -331,13 +331,14 @@ class SecretsCommand extends BaseCommand
 
         if (empty($key)) {
             $key = CLI::prompt('Enter key name');
-            if (empty($key)) {
+            if ($key === '' || $key === '0') {
                 CLI::error('Key is required');
 
                 return;
             }
         }
 
+        /** @phpstan-ignore-next-line */
         if (! CLI::prompt('Are you sure you want to delete this secret?', ['y', 'n']) === 'y') {
             CLI::write('Operation cancelled', 'yellow');
 

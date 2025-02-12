@@ -5,6 +5,7 @@ namespace Bgeneto\Secrets\Commands;
 use CodeIgniter\CLI\BaseCommand;
 use CodeIgniter\CLI\CLI;
 use Config\Autoload;
+use Exception;
 
 /**
  * Publishes the secrets configuration
@@ -71,7 +72,7 @@ class SecretsPublish extends BaseCommand
     protected function determineSourcePath()
     {
         $this->sourcePath = \realpath(__DIR__ . '/../');
-        if ($this->sourcePath === '/' || empty($this->sourcePath)) {
+        if ($this->sourcePath === false) {
             CLI::error('Unable to determine the correct source directory. Bailing.');
 
             exit();

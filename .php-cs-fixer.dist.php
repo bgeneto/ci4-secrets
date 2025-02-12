@@ -26,9 +26,14 @@ $finder = Finder::create()
     ]);
 
 $overrides = [
-    'declare_strict_types'       => false,
-    'void_return'                => false,
-    'modernize_strpos'           => ['modernize_stripos' => true],
+    'declare_strict_types'    => false,
+    'void_return'             => false,
+    'modernize_strpos'        => ['modernize_stripos' => true],
+    'global_namespace_import' => [
+        'import_constants' => false,
+        'import_functions' => false,
+        'import_classes'   => true,
+    ],
     'native_function_invocation' => [
         'include' => ['@all'],
         'scope'   => 'all',

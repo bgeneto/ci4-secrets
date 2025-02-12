@@ -4,45 +4,51 @@ declare(strict_types=1);
 
 namespace Bgeneto\Secrets;
 
+use Bgeneto\Secrets\Models\BaseSecretModel;
 use CodeIgniter\Cache\CacheInterface;
-use CodeIgniter\Database\BaseConnection;
 use CodeIgniter\Database\Exceptions\DatabaseException;
 use CodeIgniter\Encryption\EncrypterInterface;
 use CodeIgniter\Encryption\Exceptions\EncryptionException;
-use Config\Database;
 use Config\Services;
 use Exception;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
+use Throwable;
 
 class Secrets
 {
-    // NOTE: Intelephense may incorrectly report undefined properties
-    // for $useCache, $cachePrefix, and $cacheTTL, even though they are
-    // correctly defined and typed. This is likely due to how CodeIgniter
-    // handles configuration. The code is functionally correct.
-    private BaseConnection $db;
     private EncrypterInterface $encrypter;
     private CacheInterface $cache;
     private LoggerInterface $logger;
-    private $config;
-    private bool $useCache;
-    private int $cacheTTL;
-    private string $cachePrefix;
 
-    public function __construct()
+    /**
+     * @var Config\Secrets
+     */
+    private $config;
+
+    private $secretModel;
+
+    public function __construct(?EncrypterInterface $encrypter = null, ?LoggerInterface $logger = null)
     {
-        $this->db        = Database::connect();
-        $this->encrypter = Services::encrypter();
-        $this->logger    = Services::logger();
+        $this->encrypter = $encrypter ?? Services::encrypter();
+        $this->logger    = $logger ?? Services::logger();
         $this->cache     = Services::cache();
         $this->config    = \config('secrets');
 
-        // Load config values with type checks
-        $this->useCache    = (bool) $this->config->useCache;
-        $this->cachePrefix = (string) $this->config->cachePrefix;
-        $this->cacheTTL    = (int) $this->config->cacheTTL;
+        // Instantiate the configured model
+        $modelClass = $this->config->modelClass;
+
+        try {
+            $this->secretModel = new $modelClass();
+            if (! $this->secretModel instanceof BaseSecretModel) {
+                throw new RuntimeException('The configured model must extend ' . BaseSecretModel::class);
+            }
+        } catch (Throwable $e) {
+            throw new RuntimeException('Failed to instantiate the configured model: ' . $modelClass . '. Error: ' . $e->getMessage());
+        }
 
         // Verify encryption is properly configured
+        /** @phpstan-ignore-next-line */
         if (! $this->encrypter->key) {
             throw new EncryptionException('Encryption key is not set. Check your encryption configuration.');
         }
@@ -53,7 +59,7 @@ class Secrets
      *
      * @throws EncryptionException
      */
-    public function encrypt(string $data): string
+    private function encrypt(string $data): string
     {
         try {
             return \bin2hex($this->encrypter->encrypt($data));
@@ -69,7 +75,7 @@ class Secrets
      *
      * @throws EncryptionException
      */
-    public function decrypt(string $encryptedData): string
+    private function decrypt(string $encryptedData): string
     {
         try {
             return $this->encrypter->decrypt(\hex2bin($encryptedData));
@@ -90,34 +96,18 @@ class Secrets
         try {
             $encrypted = $this->encrypt($value);
 
-            $data = [
-                'key_name'        => $key,
-                'encrypted_value' => $encrypted,
-                'created_at'      => \date('Y-m-d H:i:s'),
-                'updated_at'      => \date('Y-m-d H:i:s'),
-            ];
+            $result = $this->secretModel->addSecret($key, $encrypted);
 
-            $builder = $this->db->table('secrets');
-
-            // Check if key already exists
-            if ($builder->where('key_name', $key)->countAllResults() > 0) {
-                throw new DatabaseException('Key already exists. Use update() or --force instead.');
-            }
-
-            $result = $builder->insert($data);
-
-            if ($result) {
-                // Store in cache
-                if ($this->useCache) {
-                    $this->cache->save($this->cachePrefix . $key, $encrypted, $this->cacheTTL);
-                }
+            // Store in cache
+            if ($result && $this->config->useCache) {
+                $this->cache->save($this->config->cachePrefix . $key, $encrypted, $this->config->cacheTTL);
             }
         } catch (EncryptionException $e) {
             throw $e;
         } catch (Exception $e) {
             $this->logger->error('Error storing encrypted value: ' . $e->getMessage());
 
-            throw new DatabaseException('Failed to store encrypted value');
+            throw new DatabaseException('Failed to store the encrypted value! Maybe the key already exists?');
         }
 
         return true;
@@ -133,20 +123,11 @@ class Secrets
         try {
             $encrypted = $this->encrypt($value);
 
-            $data = [
-                'encrypted_value' => $encrypted,
-                'updated_at'      => \date('Y-m-d H:i:s'),
-            ];
+            $result = $this->secretModel->updateSecret($key, $encrypted);
 
-            $result = $this->db->table('secrets')
-                ->where('key_name', $key)
-                ->update($data);
-
-            if ($result) {
-                // Update cache
-                if ($this->useCache) {
-                    $this->cache->save($this->cachePrefix . $key, $encrypted, $this->cacheTTL);
-                }
+            // Update cache
+            if ($result && $this->config->useCache) {
+                $this->cache->save($this->config->cachePrefix . $key, $encrypted, $this->config->cacheTTL);
             }
         } catch (EncryptionException $e) {
             throw $e;
@@ -168,24 +149,19 @@ class Secrets
     {
         try {
             // Try to get from cache first
-            $encrypted = $this->cache->get($this->cachePrefix . $key);
+            $encrypted = $this->cache->get($this->config->cachePrefix . $key);
 
             if ($encrypted === null) {
                 // If not in cache, get from database
-                $result = $this->db->table('secrets')
-                    ->select('encrypted_value')
-                    ->where('key_name', $key)
-                    ->get()
-                    ->getRowArray();
+                $encrypted = $this->secretModel->retrieve($key);
 
-                if (! $result) {
+                if (! $encrypted) {
                     return null;
                 }
 
-                $encrypted = $result['encrypted_value'];
                 // Store in cache for future requests
-                if ($this->useCache) {
-                    $this->cache->save($this->cachePrefix . $key, $encrypted, $this->cacheTTL);
+                if ($this->config->useCache) {
+                    $this->cache->save($this->config->cachePrefix . $key, $encrypted, $this->config->cacheTTL);
                 }
             }
 
@@ -205,15 +181,11 @@ class Secrets
     public function delete(string $key): bool
     {
         try {
-            $result = $this->db->table('secrets')
-                ->where('key_name', $key)
-                ->delete();
+            $result = $this->secretModel->deleteSecret($key);
 
-            if ($result) {
-                // Delete from cache
-                if ($this->useCache) {
-                    $this->cache->delete($this->cachePrefix . $key);
-                }
+            // Delete from cache
+            if ($result && $this->config->useCache) {
+                $this->cache->delete($this->config->cachePrefix . $key);
             }
         } catch (Exception $e) {
             $this->logger->error('Error deleting encrypted value: ' . $e->getMessage());

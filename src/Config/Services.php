@@ -15,14 +15,13 @@ class Services extends BaseService
 {
     public static function secrets(?BaseConnection $db = null, ?EncrypterInterface $encrypter = null, ?LoggerInterface $logger = null, ?bool $getShared = true)
     {
-        if ($getShared) {
+        if ($getShared === true) {
             return static::getSharedInstance('secrets', $db, $encrypter, $logger);
         }
 
-        $db ??= ConfigServices::db();
-        $encrypter ??= ConfigServices::encrypted();
+        $encrypter ??= ConfigServices::encrypter();
         $logger ??= ConfigServices::logger();
 
-        return new Secrets($db, $encrypter, $logger);
+        return new Secrets($encrypter, $logger);
     }
 }

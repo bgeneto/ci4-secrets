@@ -2,15 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * This file is part of CodeIgniter Shield.
- *
- * (c) CodeIgniter Foundation <admin@codeigniter.com>
- *
- * For the full copyright and license information, please view
- * the LICENSE file that was distributed with this source code.
- */
-
 use CodeIgniter\CodingStandard\CodeIgniter4;
 use Nexus\CsConfig\Factory;
 use PhpCsFixer\Finder;
@@ -26,9 +17,10 @@ $finder = Finder::create()
     ]);
 
 $overrides = [
-    'declare_strict_types'    => false,
-    'void_return'             => false,
-    'modernize_strpos'        => ['modernize_stripos' => true],
+    'declare_strict_types' => false,
+    'void_return'          => false,
+    'modernize_strpos'     => ['modernize_stripos' => true],
+    'mb_str_functions' => true,
     'global_namespace_import' => [
         'import_constants' => false,
         'import_functions' => false,
@@ -43,7 +35,7 @@ $overrides = [
 
 $options = [
     'finder'    => $finder,
-    'cacheFile' => '.php-cs-fixer.cache',
+    'cacheFile' => 'build/.php-cs-fixer.cache',
     'parallel'  => 8,
 ];
 

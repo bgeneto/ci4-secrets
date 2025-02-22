@@ -4,5 +4,10 @@
         "**/.vscode": true,
         "**/vendor": true,
         "**/writable": true,
-    }
+    },
+    "intelephense.files.exclude": [
+        "**/.git",
+        "**/.vscode",
+        "**/writable",
+    ]
 }
